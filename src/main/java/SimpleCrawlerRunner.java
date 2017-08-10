@@ -1,39 +1,60 @@
 import org.jsoup.Jsoup;
-import org.jsoup.helper.Validate;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
+ *
  * Created by Igor Klemenski on 09.08.17.
  *
- * This class represent the solution to the following problem:
- * 'given a URL, count the number of '<a href> links contained
+ * This class represents the solution to the following problem:
+ * 'given a URL, count the number of '<a href>' links contained
  * in the corresponding HTML document
+ *
+ * Assumptions made:
+ * 1) allow links to the same domain but not the same resource as self
+ * 2) ignore duplicates of the same URL (use Set<> to store them)
+ *
  */
 public class SimpleCrawlerRunner {
 
+    private static final String USAGE_INFO = "Usage: provide desired URL as a command line argument";
+    private static final String TERMINATION_MSG = "Program finished.";
+    private static final String FETCHING_MSG = "Fetching %s...";
+    private static final String FETCH_RESULT_MSG = "\nLinks: (%d)";
+    private static final String FETCH_ERROR_MSG = "Error trying to fetch the specified URL: ";
+
+    private static final String LINK_TAG = "a[href]";
+    private static final String ELEMENT_LINK_ATTRIBUTE= "abs:href";
+    private static final String URL_SPLIT_REGEX = "/|#";
+
     public static void main(String[] args) throws IOException {
-        Validate.isTrue(args.length == 1, "usage: supply url to fetch");
-        String url = args[0];
-        print("Fetching %s...", url);
-
-        Document doc = Jsoup.connect(url).get();
-        Elements linkElements = doc.select("a[href]");
-
-        print("\nLinks: (%d)", linkElements.size());
-
-        List<List<String>> links = processURLs(linkElements);
-        links.stream().forEach(System.out::println);
-        System.out.println(links.size());
-        Map<String, Integer> domainMap = countDomainOccurences(links);
-
-
-        domainMap.entrySet().forEach(System.out::println);
+        if (!validateInput(args)) { return; }
+        runCrawler(args[0]);
     }
+
+    public static void runCrawler(String url) {
+        System.out.format(FETCHING_MSG, url);
+        try {
+            Elements linkElements = fetchResource(url, LINK_TAG);
+            System.out.format(FETCH_RESULT_MSG, linkElements.size());
+
+            List<List<String>> links = processURLs(linkElements);
+            System.out.println(links.size());
+
+            Map<String, Integer> domainMap = countDomainOccurences(links);
+            domainMap.entrySet().forEach(System.out::println);
+        } catch (IOException e) {
+            System.err.println(FETCH_ERROR_MSG + e.getMessage());
+        } finally {
+            System.out.println(TERMINATION_MSG);
+        }
+    }
+
 
     /**
      * This method takes a list of URLs and returns a collection
@@ -49,13 +70,13 @@ public class SimpleCrawlerRunner {
     private static List<List<String>> processURLs(Elements linkElements) {
         return linkElements
                 .stream()
-                .map(elem -> elem.attr("abs:href"))
-                .map(link -> Arrays.asList(link.split("/|#", 4))
+                .map(elem -> elem.attr(ELEMENT_LINK_ATTRIBUTE))
+                .map(link -> Arrays.asList(link.split(URL_SPLIT_REGEX, 4))
                         .stream()
                         .skip(2)
                         .collect(Collectors.toList())
                 )
-                .filter(list -> list.size() > 1)
+                .filter(((Predicate<List<String>>) List::isEmpty).negate())
                 .collect(Collectors.toList());
 }
 
@@ -84,7 +105,14 @@ public class SimpleCrawlerRunner {
                 );
     }
 
-    private static void print(String msg, Object... args) {
-        System.out.println(String.format(msg, args));
+    private static boolean validateInput(String[] args) {
+        if (args.length == 1) { return true; }
+        System.err.println(USAGE_INFO);
+        return false;
+    }
+
+    private static Elements fetchResource(String url, String htmlTag) throws IOException {
+        Document doc = Jsoup.connect(url).get();
+        return doc.select(htmlTag);
     }
 }
