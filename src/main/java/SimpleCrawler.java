@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
 public class SimpleCrawler {
 
     private static final String USAGE_INFO = "Usage: provide desired URL as a command line argument";
-    private static final String OUTPUT_INFO = "Output format: 'domain name'='# of links pointing to it'";
+    private static final String OUTPUT_INFO = "Output format: 'domain name'='# of links pointing to it'\n";
     private static final String TERMINATION_MSG = "\nProgram finished.";
-    private static final String FETCHING_MSG = "Fetching %s...\n";
+    private static final String FETCHING_MSG = "Fetching %s...\n\n";
     private static final String FETCH_ERROR_MSG = "Error trying to fetch the specified URL: ";
 
     private static final String LINK_TAG = "a[href]";
