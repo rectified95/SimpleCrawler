@@ -15,21 +15,22 @@ import java.util.stream.Collectors;
  * in the corresponding HTML document
  *
  * Assumptions made:
- * 1) allow links to the same domain as self but not the same resource as self
+ * 1) allow links to self
  * 2) ignore duplicates of the same URL (use Set<> to store them)
  */
 
 public class SimpleCrawler {
 
     private static final String USAGE_INFO = "Usage: provide desired URL as a command line argument";
-    private static final String TERMINATION_MSG = "Program finished.";
-    private static final String FETCHING_MSG = "Fetching %s...";
-    private static final String FETCH_RESULT_MSG = "\nLinks: (%d)";
+    private static final String OUTPUT_INFO = "Output format: 'domain name'='# of links pointing to it'";
+    private static final String TERMINATION_MSG = "\nProgram finished.";
+    private static final String FETCHING_MSG = "Fetching %s...\n";
     private static final String FETCH_ERROR_MSG = "Error trying to fetch the specified URL: ";
 
     private static final String LINK_TAG = "a[href]";
     private static final String ELEMENT_LINK_ATTRIBUTE= "abs:href";
-    private static final String URL_SPLIT_REGEX = "/|#";
+    private static final String URL_SPLIT_TOKEN = "/";
+    private static final String EMPTY_STRING = "";
 
     public static void runCrawler(String[] args) {
         if (!validateInput(args)) {
@@ -41,14 +42,10 @@ public class SimpleCrawler {
 
         try {
             Elements linkElements = fetchResource(url, LINK_TAG);
-            System.out.format(FETCH_RESULT_MSG, linkElements.size());
-
             List<List<String>> links = processURLs(linkElements);
-            System.out.println(links.size());
-            // to be commented out
-            links.stream().forEach(System.out::println);
-
             Map<String, Integer> domainMap = countDomainOccurences(links);
+
+            System.out.println(OUTPUT_INFO);
             domainMap.entrySet().forEach(System.out::println);
         } catch (IOException e) {
             System.err.println(FETCH_ERROR_MSG + e.getMessage());
@@ -73,7 +70,7 @@ public class SimpleCrawler {
         return linkElements
                 .stream()
                 .map(elem -> elem.attr(ELEMENT_LINK_ATTRIBUTE))
-                .map(link -> Arrays.asList(link.split(URL_SPLIT_REGEX, 4))
+                .map(link -> Arrays.asList(link.split(URL_SPLIT_TOKEN, 4))
                         .stream()
                         .skip(2)
                         .collect(Collectors.toList())
@@ -81,7 +78,7 @@ public class SimpleCrawler {
                 .filter(((Predicate<List<String>>) List::isEmpty).negate())
                 .map(list -> {
                     if (list.size() == 1) {
-                        list.add("");
+                        list.add(EMPTY_STRING);
                     }
                     return list;
                 })
