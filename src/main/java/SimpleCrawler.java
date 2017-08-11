@@ -58,8 +58,7 @@ public class SimpleCrawler {
      * This method takes a list of URLs and returns a collection
      * of string pairs ready for further processing
      *
-     * It does so by splitting the string by '/' or '#' characters
-     * ('#' is used to account for cases of linking to self)
+     * It does so by splitting the string by '/'
      * and then discarding the 'http://' portion of the domain
      *
      * @param linkElements list of objects representing URLs obtained from parsing the HTML document
